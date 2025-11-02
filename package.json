@@ -1,5 +1,5 @@
 {
-  "name": "galactic.ts",
+  "name": "@galaxybot.app/galactic.ts",
   "version": "0.0.0",
   "description": "A package for managing sharding, allowing for efficient distribution of bot processes across multiple servers.",
   "author": "GalaxyBot",
