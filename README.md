@@ -1,9 +1,4 @@
-<br>
-<p align="center">
-  <a href="https://galaxybot.app">
-    <img src="https://s3.galaxybot.app/media/galactic/readmeBanner.png" alt="galactic logo">
-  </a>
-</p>
+![Galactic Logo](https://s3.galaxybot.app/media/galactic/readmeBanner.png?v=2)
 
 galactic is a powerful scaling library for Discord bots, built to make distributed shard and cluster management simple, efficient, and highly flexible.
 

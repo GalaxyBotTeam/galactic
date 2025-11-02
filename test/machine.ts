@@ -4,11 +4,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const randomNumberFrom1To4 = Math.floor(Math.random() * 4) + 1;
-console.log(`Random number for cluster: ${randomNumberFrom1To4}`);
-console.log(`${__dirname}\\bot.js`)
-const machine = new ManagedInstance(`${__dirname}/bot.js`, 'localhost', 3000, randomNumberFrom1To4, {
-    webserver: ''
+const machine = new ManagedInstance(`${__dirname}/bot.js`, 'localhost', 3000, 1, {
+    key: "value"
 }, [], false);
 
 machine.start();
