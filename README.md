@@ -32,8 +32,45 @@ yarn add galactic.ts
 
 ## Quick Start Example
 
-```js
-WIP
+```ts filename="index.ts"
+import {StandaloneInstance} from "galactic.ts";
+
+// Create a standalone instance running 2 clusters with 2 shards each
+const machine = new StandaloneInstance(
+    `${__dirname}/bot.js`,
+    2, 2, process.env.TEST_SA_BOT_TOKEN!, 
+    []
+);
+
+machine.start();
+```
+
+```ts filename="bot.ts"
+import {Cluster} from "galactic.ts";
+import {Client, ClientOptions} from "discord.js";
+
+// Extend the Discord Client to include a reference to its Cluster
+export class ExtendedClient extends Client {
+    cluster: Cluster<ExtendedClient>;
+
+    constructor(options: ClientOptions, cluster: Cluster<ExtendedClient>) {
+        super(options);
+        this.cluster = cluster;
+    }
+}
+
+// Initialize the Cluster
+const cluster = Cluster.initial<ExtendedClient>();
+
+const client = new ExtendedClient({
+    shards: cluster.shardList,
+    shardCount: cluster.totalShards,
+    intents: cluster.intents,
+}, cluster);
+
+cluster.client = client;
+
+client.login(cluster.token)
 ```
 
 ## Distributed Setup
