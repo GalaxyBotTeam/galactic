@@ -1,6 +1,6 @@
 {
   "name": "galactic.ts",
-  "version": "1.0.30",
+  "version": "1.0.0",
   "description": "A package for managing sharding, allowing for efficient distribution of bot processes across multiple servers.",
   "author": "GalaxyBot",
   "license": "apache-2.0",
