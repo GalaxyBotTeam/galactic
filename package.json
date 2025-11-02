@@ -1,6 +1,6 @@
 {
   "name": "galactic.ts",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "galactic is a scalable clustering and sharding framework for Discord bots, enabling efficient multi-machine deployments with seamless discord.js integration.",
   "keywords": [
     "discord",
@@ -17,7 +17,7 @@
     "galactic"
   ],
   "author": "GalaxyBot",
-  "license": "apache-2.0",
+  "license": "MIT",
   "scripts": {
     "build": "tsup",
     "test:cluster": "tsc && node dist/test/cluster.js",
