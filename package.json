@@ -1,5 +1,5 @@
 {
-  "name": "@galaxybot/galactic",
+  "name": "galactic.ts",
   "version": "1.0.30",
   "description": "A package for managing sharding, allowing for efficient distribution of bot processes across multiple servers.",
   "author": "GalaxyBot",
@@ -27,10 +27,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GalaxyBotTeam/galactic"
+    "url": "git+https://github.com/GalaxyBotTeam/galactic.ts"
   },
   "bugs": {
-    "url": "https://github.com/GalaxyBotTeam/galactic/issues"
+    "url": "https://github.com/GalaxyBotTeam/galactic.ts/issues"
   },
   "homepage": "https://galaxybot.app"
 }
