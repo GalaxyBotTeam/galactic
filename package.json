@@ -1,7 +1,21 @@
 {
-  "name": "@galaxybot.app/galactic.ts",
-  "version": "0.0.0",
-  "description": "A package for managing sharding, allowing for efficient distribution of bot processes across multiple servers.",
+  "name": "galactic.ts",
+  "version": "1.0.0",
+  "description": "galactic is a scalable clustering and sharding framework for Discord bots, enabling efficient multi-machine deployments with seamless discord.js integration.",
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "discord.js",
+    "sharding",
+    "clustering",
+    "scaling",
+    "distributed",
+    "cluster-management",
+    "multi-instance",
+    "load-balancing",
+    "bot-hosting",
+    "galactic"
+  ],
   "author": "GalaxyBot",
   "license": "apache-2.0",
   "scripts": {
