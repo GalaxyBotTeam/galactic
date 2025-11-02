@@ -1,0 +1,31 @@
+{
+  "name": "@galaxybot/galactic",
+  "version": "1.0.30",
+  "description": "A package for managing sharding, allowing for efficient distribution of bot processes across multiple servers.",
+  "author": "GalaxyBot",
+  "license": "apache-2.0",
+  "scripts": {
+    "build": "tsup",
+    "test:cluster": "tsc && node dist/test/cluster.js",
+    "test:bot": "node dist/test/bot.js",
+    "test:bridge": "tsc && node dist/test/bridge.js"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "discord.js": "^14.24.2",
+    "dotenv": "^17.2.3",
+    "net-ipc": "^2.2.2"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "registry": "https://github.com/GalaxyBotTeam/galactic"
+  }
+}
