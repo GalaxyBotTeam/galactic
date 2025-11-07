@@ -1,10 +1,5 @@
 ![Galactic Logo](https://s3.galaxybot.app/media/galactic/contributionBanner.png?v=2)
 
-
-Here’s a tailored CONTRIBUTING guide for galactic, modeled after your example but focused on galactic's ecosystem and technology:
-
-***
-
 # Contributing
 
 Welcome to the galactic project! We’re excited to have you join our open-source community. This guide will help you set up your development environment, adhere to our coding standards, and contribute effectively.
