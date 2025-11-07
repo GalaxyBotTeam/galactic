@@ -1,6 +1,6 @@
 import {Server} from 'net-ipc';
 import {BridgeClientConnection, BridgeClientConnectionStatus} from "./BridgeClientConnection";
-import {GatewayIntentsString} from "discord.js";
+import {GatewayIntentsString, Snowflake} from "discord.js";
 import {ClusterCalculator} from "./ClusterCalculator";
 import {BridgeClientCluster, BridgeClientClusterConnectionStatus, HeartbeatResponse} from "./BridgeClientCluster";
 import {ShardingUtil} from "../general/ShardingUtil";
@@ -418,6 +418,19 @@ export class Bridge {
             })
             await instance.connection.close("Instance stopped.", false);
         }
+    }
+
+    sendRequestToGuild(cluster: BridgeClientCluster, guildID: Snowflake, data: unknown, timeout = 5000): Promise<unknown> {
+        if(!cluster.connection){
+            return Promise.reject(new Error("No connection defined for cluster " + cluster.clusterID));
+        }
+
+        return cluster.connection.eventManager.request({
+            type: 'REDIRECT_REQUEST_TO_GUILD',
+            clusterID: cluster.clusterID,
+            guildID: guildID,
+            data: data
+        }, timeout);
     }
 }
 
