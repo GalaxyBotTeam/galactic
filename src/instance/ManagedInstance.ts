@@ -1,5 +1,5 @@
 import {BotInstance} from "./BotInstance";
-import {ClusterProcess, ClusterProcessState} from "../cluster/ClusterProcess";
+import {ClusterProcess} from "../cluster/ClusterProcess";
 import {Client} from "net-ipc";
 import {EventManager} from "../general/EventManager";
 import {GatewayIntentsString} from "discord.js";
