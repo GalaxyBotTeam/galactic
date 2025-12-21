@@ -4,7 +4,6 @@ import {GatewayIntentsString, Snowflake} from "discord.js";
 import {ClusterCalculator} from "./ClusterCalculator";
 import {BridgeClientCluster, BridgeClientClusterConnectionStatus, HeartbeatResponse} from "./BridgeClientCluster";
 import {ShardingUtil} from "../general/ShardingUtil";
-import * as cluster from "node:cluster";
 
 export class Bridge {
     public readonly port: number;
@@ -14,6 +13,7 @@ export class Bridge {
     private readonly intents: GatewayIntentsString[];
     private readonly shardsPerCluster: number = 1;
     private readonly clusterToStart: number = 1
+    private readonly reconnectionTimeoutInMs: number = 30000;
 
     private readonly clusterCalculator: ClusterCalculator;
 
@@ -24,12 +24,13 @@ export class Bridge {
         CLIENT_STOP: undefined
     }
 
-    constructor(port: number, token: string, intents: GatewayIntentsString[], shardsPerCluster: number, clusterToStart: number) {
+    constructor(port: number, token: string, intents: GatewayIntentsString[], shardsPerCluster: number, clusterToStart: number, reconnectionTimeoutInMs: number) {
         this.port = port;
         this.token = token;
         this.intents = intents;
         this.clusterToStart = clusterToStart;
         this.shardsPerCluster = shardsPerCluster;
+        this.reconnectionTimeoutInMs = reconnectionTimeoutInMs;
 
         this.clusterCalculator = new ClusterCalculator(this.clusterToStart, this.shardsPerCluster);
 
@@ -61,7 +62,12 @@ export class Bridge {
             return;
         }
 
-        const connectedClients: BridgeClientConnection[] = this.connectedClients.values().filter(c => c.connectionStatus == BridgeClientConnectionStatus.READY && !c.dev).toArray();
+        const connectedClients: BridgeClientConnection[] = this.connectedClients.values()
+            .filter(c => c.connectionStatus == BridgeClientConnectionStatus.READY)
+            .filter(c => !c.dev)
+            .filter(c => c.establishedAt + this.reconnectionTimeoutInMs < Date.now())
+            .toArray();
+
         const {most, least} = this.clusterCalculator.findMostAndLeastClustersForConnections(connectedClients);
         if (most) {
             const clusterToSteal = this.clusterCalculator.getClusterForConnection(most)[0] || undefined;
