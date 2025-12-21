@@ -1,13 +1,18 @@
-import {Bridge} from "../src/bridge/Bridge";
+import {Bridge} from "../src";
 
 import dotenv from "dotenv";
 
 dotenv.config();
 
 
-const bridge = new Bridge(3000, process.env.TEST_BOT_TOKEN!, [
-    "Guilds"
-], 2, 2)
+const bridge = new Bridge(3000,
+    process.env.TEST_BOT_TOKEN!, [
+        "Guilds"
+    ],
+    2
+    , 2,
+    Number.parseInt(process.env.RECLUSTERING_TIMEOUT_IN_MS!)
+)
 
 bridge.start();
 
@@ -30,11 +35,11 @@ process.stdin.setEncoding('utf8');
 process.stdin.on('data', async function (text: Buffer) {
     const input = text.toString().trim().split(" ");
 
-    if(input[0] == 'stop'){
+    if (input[0] == 'stop') {
         bridge.stopInstance(bridge.connectedClients.values().next().value!).then((result) => {
             console.log("Stopped instance:", result);
         });
-    } else if(input[0] == 'move') {
+    } else if (input[0] == 'move') {
         const instanceID = parseInt(input[1]);
         const clusterID = parseInt(input[2]);
 

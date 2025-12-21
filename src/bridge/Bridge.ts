@@ -13,7 +13,7 @@ export class Bridge {
     private readonly intents: GatewayIntentsString[];
     private readonly shardsPerCluster: number = 1;
     private readonly clusterToStart: number = 1
-    private readonly reconnectionTimeoutInMs: number;
+    private readonly reclusteringTimeoutInMs: number;
 
     private readonly clusterCalculator: ClusterCalculator;
 
@@ -24,13 +24,13 @@ export class Bridge {
         CLIENT_STOP: undefined
     }
 
-    constructor(port: number, token: string, intents: GatewayIntentsString[], shardsPerCluster: number, clusterToStart: number, reconnectionTimeoutInMs: number) {
+    constructor(port: number, token: string, intents: GatewayIntentsString[], shardsPerCluster: number, clusterToStart: number, reclusteringTimeoutInMs: number) {
         this.port = port;
         this.token = token;
         this.intents = intents;
         this.clusterToStart = clusterToStart;
         this.shardsPerCluster = shardsPerCluster;
-        this.reconnectionTimeoutInMs = reconnectionTimeoutInMs;
+        this.reclusteringTimeoutInMs = reclusteringTimeoutInMs;
 
         this.clusterCalculator = new ClusterCalculator(this.clusterToStart, this.shardsPerCluster);
 
@@ -65,7 +65,7 @@ export class Bridge {
         const connectedClients: BridgeClientConnection[] = this.connectedClients.values()
             .filter(c => c.connectionStatus == BridgeClientConnectionStatus.READY)
             .filter(c => !c.dev)
-            .filter(c => c.establishedAt + this.reconnectionTimeoutInMs < Date.now())
+            .filter(c => c.establishedAt + this.reclusteringTimeoutInMs < Date.now())
             .toArray();
 
         const {most, least} = this.clusterCalculator.findMostAndLeastClustersForConnections(connectedClients);
