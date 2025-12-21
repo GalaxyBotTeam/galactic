@@ -13,7 +13,7 @@ export class Bridge {
     private readonly intents: GatewayIntentsString[];
     private readonly shardsPerCluster: number = 1;
     private readonly clusterToStart: number = 1
-    private readonly reconnectionTimeoutInMs: number = 30000;
+    private readonly reconnectionTimeoutInMs: number;
 
     private readonly clusterCalculator: ClusterCalculator;
 
