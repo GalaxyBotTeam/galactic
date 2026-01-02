@@ -184,6 +184,8 @@ export class Cluster<T extends Client> {
             } else {
                 return result;
             }
+        } else if(m.type == 'SELF_DESTRUCT') {
+            // TODO
         }
         return undefined;
     }
