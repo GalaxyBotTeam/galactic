@@ -12,6 +12,7 @@ export class BridgeClientConnection {
     public readonly data: unknown;
     public connectionStatus: BridgeClientConnectionStatus = BridgeClientConnectionStatus.READY;
     public readonly dev: boolean = false;
+    public readonly establishedAt: number = Date.now();
 
     private _onMessage?: (message: unknown) => void;
     private _onRequest?: (message: unknown) => unknown;
