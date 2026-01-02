@@ -104,7 +104,7 @@ export abstract class BotInstance {
             type: 'SELF_DESTRUCT',
             reason: reason
         }, 5000).catch(() => {
-
+            if(this.eventMap.PROCESS_SELF_DESTRUCT_ERROR) this.eventMap.PROCESS_SELF_DESTRUCT_ERROR(client, reason, 'Cluster didnt respond to shot-call.');
         }).finally(() => {
             if (client.child && client.child.pid) {
                 if(client.child.kill("SIGKILL")) {

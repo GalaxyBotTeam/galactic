@@ -19,6 +19,8 @@ export class Cluster<T extends Client> {
 
     public client!: T;
 
+    public onSelfDestruct?: () => void;
+
     private readonly eventMap: {
         'message': ((message: unknown) => void) | undefined,
         'request': ((message: unknown, resolve: (data: unknown) => void, reject: (error: any) => void) => void) | undefined,
@@ -185,7 +187,9 @@ export class Cluster<T extends Client> {
                 return result;
             }
         } else if(m.type == 'SELF_DESTRUCT') {
-            // TODO
+            if(this.onSelfDestruct) {
+                this.onSelfDestruct();
+            }
         }
         return undefined;
     }
