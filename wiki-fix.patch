@@ -1,0 +1,25 @@
+From ed65c5f3c030dd2852ba175e67ab301434022ad3 Mon Sep 17 00:00:00 2001
+From: GitHub Copilot <copilot@github.com>
+Date: Sat, 10 Jan 2026 00:34:04 +0000
+Subject: [PATCH] Fix broken link: Replace placeholder URL with correct
+ repository
+
+---
+ Standalone Instance.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Standalone Instance.md b/Standalone Instance.md
+index 77f2f94..73458dc 100644
+--- a/Standalone Instance.md	
++++ b/Standalone Instance.md	
+@@ -45,4 +45,4 @@ Your standalone instance will start multiple clusters and shards according to yo
+ 
+ ***
+ 
+-If you have questions or want to contribute, visit [GitHub discussions or the issue tracker](https://github.com/youruser/galactic/issues).
+\ No newline at end of file
++If you have questions or want to contribute, visit [GitHub discussions or the issue tracker](https://github.com/GalaxyBotTeam/galactic.ts/issues).
+\ No newline at end of file
+-- 
+2.52.0
+
