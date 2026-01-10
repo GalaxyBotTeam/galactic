@@ -19,9 +19,9 @@ export class Bridge {
 
     private readonly eventMap: BridgeEventListeners = {
         CLUSTER_READY: undefined, CLUSTER_HEARTBEAT_FAILED: undefined,
-        CLUSTER_STOPPED: undefined, CLIENT_CONNECTED: undefined, CLIENT_DISCONNECTED: undefined,
+        CLUSTER_STOPPED: undefined, HOST_CONNECTED: undefined, HOST_DISCONNECTED: undefined,
         CLUSTER_SPAWNED: undefined, CLUSTER_RECLUSTER: undefined, ERROR: undefined,
-        CLIENT_STOP: undefined
+        HOST_STOP: undefined
     }
 
     constructor(port: number, token: string, intents: GatewayIntentsString[], shardsPerCluster: number, clusterToStart: number, reclusteringTimeoutInMs: number) {
@@ -175,7 +175,7 @@ export class Bridge {
             }
 
             const bridgeConnection = new BridgeClientConnection(payload.id, connection, data, dev);
-            if(this.eventMap.CLIENT_CONNECTED) this.eventMap.CLIENT_CONNECTED(bridgeConnection);
+            if(this.eventMap.HOST_CONNECTED) this.eventMap.HOST_CONNECTED(bridgeConnection);
 
             bridgeConnection.onMessage((m: any) => {
                 if (m.type == 'CLUSTER_SPAWNED') {
@@ -289,7 +289,7 @@ export class Bridge {
             }
 
             this.connectedClients.delete(connection.id);
-            if(this.eventMap.CLIENT_DISCONNECTED) this.eventMap.CLIENT_DISCONNECTED(closedConnection, reason);
+            if(this.eventMap.HOST_DISCONNECTED) this.eventMap.HOST_DISCONNECTED(closedConnection, reason);
         });
 
         this.server.on("message", (message, connection) => {
@@ -352,7 +352,7 @@ export class Bridge {
     }
 
     async stopInstance(instance: BridgeClientConnection, recluster = true) {
-        if(this.eventMap.CLIENT_STOP) this.eventMap.CLIENT_STOP(instance);
+        if(this.eventMap.HOST_STOP) this.eventMap.HOST_STOP(instance);
         instance.connectionStatus = BridgeClientConnectionStatus.PENDING_STOP;
 
         let clusterToSteal: BridgeClientCluster | undefined;
@@ -448,8 +448,8 @@ export type BridgeEventListeners = {
     'CLUSTER_SPAWNED': ((cluster: BridgeClientCluster, connection: BridgeClientConnection) => void) | undefined,
     'CLUSTER_RECLUSTER': ((cluster: BridgeClientCluster, newConnection: BridgeClientConnection, oldConnection: BridgeClientConnection) => void) | undefined,
     'CLUSTER_HEARTBEAT_FAILED': ((cluster: BridgeClientCluster, error: unknown) => void) | undefined,
-    'CLIENT_CONNECTED': ((client: BridgeClientConnection) => void) | undefined,
-    'CLIENT_DISCONNECTED': ((client: BridgeClientConnection, reason: string) => void) | undefined,
+    'HOST_CONNECTED': ((client: BridgeClientConnection) => void) | undefined,
+    'HOST_DISCONNECTED': ((client: BridgeClientConnection, reason: string) => void) | undefined,
     'ERROR': ((error: string) => void) | undefined,
-    'CLIENT_STOP': ((instance: BridgeClientConnection) => void) | undefined
+    'HOST_STOP': ((instance: BridgeClientConnection) => void) | undefined
 };
