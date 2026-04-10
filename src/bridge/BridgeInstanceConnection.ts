@@ -1,53 +1,53 @@
-import {EventManager} from "../general/EventManager";
-import {Connection} from "net-ipc";
+import { EventManager } from "../general/EventManager";
+import type { Connection } from "net-ipc";
 
 export enum BridgeInstanceConnectionStatus {
-    READY = 'ready',
-    PENDING_STOP = 'pending_stop',
+    READY = "ready",
+    PENDING_STOP = "pending_stop",
 }
 export class BridgeInstanceConnection {
-    public readonly instanceID: number;
-    public readonly eventManager: EventManager;
-    public readonly connection: Connection;
-    public readonly data: unknown;
-    public connectionStatus: BridgeInstanceConnectionStatus = BridgeInstanceConnectionStatus.READY;
-    public readonly dev: boolean = false;
-    public readonly establishedAt: number = Date.now();
+	public readonly instanceID: number;
+	public readonly eventManager: EventManager;
+	public readonly connection: Connection;
+	public readonly data: unknown;
+	public connectionStatus: BridgeInstanceConnectionStatus = BridgeInstanceConnectionStatus.READY;
+	public readonly dev: boolean = false;
+	public readonly establishedAt: number = Date.now();
 
-    private _onMessage?: (message: unknown) => void;
-    private _onRequest?: (message: unknown) => unknown;
+	private _onMessage?: (message: unknown) => void;
+	private _onRequest?: (message: unknown) => unknown;
 
-    constructor(instanceID: number, connection: Connection, data: unknown, dev: boolean) {
-        this.instanceID = instanceID;
-        this.connection = connection;
-        this.data = data;
-        this.dev = dev || false;
-        this.eventManager = new EventManager((message) => {
-            if(!this.connection?.connection?.closed){
-                return this.connection.send(message);
-            }
-            return Promise.reject(new Error('Connection is closed, cannot send message'));
-        }, (message) => {
-            if (this._onMessage) {
-                this._onMessage(message);
-            }
-        }, (message) => {
-            if (this._onRequest) {
-                return this._onRequest(message);
-            }
-            return undefined;
-        })
-    }
+	constructor(instanceID: number, connection: Connection, data: unknown, dev: boolean) {
+		this.instanceID = instanceID;
+		this.connection = connection;
+		this.data = data;
+		this.dev = dev || false;
+		this.eventManager = new EventManager((message) => {
+			if(!this.connection?.connection?.closed){
+				return this.connection.send(message);
+			}
+			return Promise.reject(new Error("Connection is closed, cannot send message"));
+		}, (message) => {
+			if (this._onMessage) {
+				this._onMessage(message);
+			}
+		}, (message) => {
+			if (this._onRequest) {
+				return this._onRequest(message);
+			}
+			return undefined;
+		});
+	}
 
-    messageReceive(message: any) {
-        this.eventManager.receive(message);
-    }
+	messageReceive(message: any) {
+		this.eventManager.receive(message);
+	}
 
-    onRequest(callback: (message: unknown) => unknown) {
-        this._onRequest = callback;
-    }
+	onRequest(callback: (message: unknown) => unknown) {
+		this._onRequest = callback;
+	}
 
-    onMessage(callback: (message: unknown) => void) {
-        this._onMessage = callback;
-    }
+	onMessage(callback: (message: unknown) => void) {
+		this._onMessage = callback;
+	}
 }

@@ -1,5 +1,5 @@
-export type EventPayload = {
+export interface EventPayload {
     id: string,
-    type: 'message' | 'request' | 'response' | 'response_error',
+    type: "message" | "request" | "response" | "response_error",
     data: unknown
 }

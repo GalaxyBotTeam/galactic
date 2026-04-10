@@ -1,4 +1,4 @@
-name: Release
+name: release
 on:
   release:
     types: [released]
@@ -11,18 +11,17 @@ jobs:
       id-token: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-      - name: Set package version
-        run: npm version ${GITHUB_REF_NAME#v} --no-git-tag-version
-
-      - run: npm ci
-      - run: npm run build
-
-      - name: Publish to npm via Trusted Publishing
-        run: npm publish --provenance --access public
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      - name: 🐰 Install bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+      - name: 🏷️ Set package version
+        run: bun version ${GITHUB_REF_NAME#v} --no-git-tag-version
+      - name: 📦 Install dependencies
+        run: bun ci
+      - name: 🔨 Build
+        run: bun run build
+      - name: 🚀 Publish to npm via Trusted Publishing
+        run: bun publish --provenance --access public
