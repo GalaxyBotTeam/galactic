@@ -13,6 +13,7 @@ const machine = new ManagedInstance(
     key: "value",
   },
   ["--import", "tsx"],
+  process.env,
   false,
 );
 

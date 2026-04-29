@@ -26,8 +26,8 @@ export class ManagedInstance extends BotInstance {
 
     private dev: boolean = false;
 
-    constructor(entryPoint: string, host: string, port: number, instanceID: number, data: unknown, execArgv?: string[], dev?: boolean) {
-        super(entryPoint, execArgv);
+    constructor(entryPoint: string, host: string, port: number, instanceID: number, data: unknown, execArgv?: string[], env?: NodeJS.ProcessEnv, dev?: boolean) {
+        super(entryPoint, execArgv, env);
 
         this.host = host;
         this.port = port;
