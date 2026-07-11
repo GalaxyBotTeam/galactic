@@ -1,9 +1,9 @@
-import {BotInstance} from "./BotInstance";
+import {BotInstance2} from "./BotInstance2";
 import {ClusterProcess} from "./cluster/ClusterProcess";
 import {GatewayIntentsString} from "discord.js";
 import {ShardingUtil} from "../general/ShardingUtil";
 
-export class StandaloneInstance extends BotInstance {
+export class StandaloneInstance extends BotInstance2 {
     private readonly totalClusters: number;
     private readonly shardsPerCluster: number;
 

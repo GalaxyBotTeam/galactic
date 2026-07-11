@@ -4,6 +4,7 @@ import {BridgeInstance} from "./BridgeInstance";
 import {BridgeCluster, BridgeClusterStatus} from "./BridgeCluster";
 import {ClusterUtil} from "../utils/ClusterUtil";
 import {z} from "zod";
+import {SpawnClusterEvent} from "../events/SpawnClusterEvent";
 
 export class Bridge {
     public readonly server: Server;
@@ -111,8 +112,8 @@ export class Bridge {
     start(instance: BridgeInstance, cluster: BridgeCluster) {
         cluster.instance = instance;
         cluster.status = BridgeClusterStatus.STARTING
-        instance.eventManager.send<BridgeClusterEventCreateCluster>({
-            type: 'CLUSTER_CREATE',
+        instance.eventManager.send<SpawnClusterEvent>({
+            type: 'SPAWN_CLUSTER',
             data: {
                 clusterID: cluster.id,
                 instanceID: instance.id,

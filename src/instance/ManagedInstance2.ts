@@ -1,4 +1,4 @@
-import {BotInstance} from "./BotInstance";
+import {BotInstance2} from "./BotInstance2";
 import {ClusterProcess} from "./cluster/ClusterProcess";
 import {Client} from "net-ipc";
 import {EventManager} from "../general/EventManager";
@@ -6,13 +6,15 @@ import {GatewayIntentsString} from "discord.js";
 import {ShardingUtil} from "../general/ShardingUtil";
 import {z} from "zod";
 import {BridgeClusterEventCreateCluster} from "../bridge/Bridge";
+import {ManagedInstanceEvents} from "../events/ManagedInstanceEvents";
+import {SpawnClusterActionData} from "../events/SpawnClusterEvent";
 
 export enum BridgeConnectionStatus {
     CONNECTED,
     DISCONNECTED,
 }
 
-export class ManagedInstance extends BotInstance {
+export class ManagedInstance2 extends BotInstance2 {
 
     private readonly host: string;
 
@@ -51,30 +53,17 @@ export class ManagedInstance extends BotInstance {
                 return instance.send(message);
             }
             return Promise.reject(new Error('Client is not ready to send messages'));
-        }, (message) => {
-            const m = z.object({type: z.string(), data: z.unknown}).safeParse(message);
-            if(m.success){
-                if (m.data.type == 'CLUSTER_CREATE') {
-                    this.onClusterCreate(m.data)
-                } else if (m.data.type == 'CLUSTER_STOP') {
-                    this.onClusterStop(m.data);
-                } else if (m.data.type == 'CLUSTER_RECLUSTER') {
-                    this.onClusterRecluster(m.data);
-                } else if (m.data.type == 'INSTANCE_STOP_ACK') {
-                    if (this.eventMap.INSTANCE_STOP_ACK) this.eventMap.INSTANCE_STOP_ACK();
-                } else if (m.data.type == 'INSTANCE_STOP') {
-                    if (this.eventMap.INSTANCE_STOP) this.eventMap.INSTANCE_STOP();
-                }
+        }, (raw) => {
+            const message = ManagedInstanceEvents.safeParse(raw);
+            if (!message.success) {
+                return;
+            }
+            if (message.data.type == 'SPAWN_CLUSTER') {
+                this.onClusterCreate(message.data)
             }
         }, (message) => {
             return this.onBridgeRequest(message);
         });
-
-        setInterval(() => {
-            if (this.connectionStatus == BridgeConnectionStatus.CONNECTED) {
-                this.selfCheck();
-            }
-        }, 2500); // 5 minutes
 
         instance.connect({
             id: this.instanceID,
@@ -117,44 +106,6 @@ export class ManagedInstance extends BotInstance {
         })
     }
 
-    private selfCheck() {
-        this.eventManager.request({
-            type: 'SELF_CHECK'
-        }, 1000 * 60).then((r) => {
-            const response = r as { clusterList: number[] };
-
-            if (this.eventMap.SELF_CHECK_RECEIVED) {
-                this.eventMap.SELF_CHECK_RECEIVED(response);
-            }
-
-            const startingClusters = this.clusters.values().filter(c => c.status == 'starting').toArray();
-            startingClusters.forEach((c: ClusterProcess) => {
-                if (Date.now() - c.createdAt > 10 * 60 * 1000) {
-                    this.killProcess(c, 'Cluster took too long to start');
-                }
-            })
-
-            // check if there is an wrong cluster on this host
-            const wrongClusters = this.clusters.values().filter(c => !response.clusterList.includes(c.id)).toArray();
-            if (wrongClusters.length > 0) {
-                if (this.eventMap.SELF_CHECK_ERROR) {
-                    this.eventMap.SELF_CHECK_ERROR(`Self check found wrong clusters: ${wrongClusters.map(c => c.id).join(', ')}`);
-                }
-                wrongClusters.forEach(c => {
-                    this.killProcess(c, 'Self check found wrong cluster');
-                });
-            } else {
-                if (this.eventMap.SELF_CHECK_SUCCESS) {
-                    this.eventMap.SELF_CHECK_SUCCESS();
-                }
-            }
-        }).catch((err) => {
-            if (this.eventMap.SELF_CHECK_ERROR) {
-                this.eventMap.SELF_CHECK_ERROR(`Self check failed: ${err}`);
-            }
-        });
-    }
-
     protected setClusterStopped(client: ClusterProcess, reason: string): void {
         this.eventManager?.send({
             type: 'CLUSTER_STOPPED',
@@ -187,17 +138,12 @@ export class ManagedInstance extends BotInstance {
         });
     }
 
-    private onClusterCreate(message: unknown) {
-        const command = BridgeClusterEventCreateCluster.safeParse(message);
-        if(!command.success) {
-            return
-        }
-
-        if (this.clusters.has(command.data.data.clusterID)) {
+    private onClusterCreate(message: SpawnClusterActionData) {
+        if (this.clusters.has(message.clusterID)) {
             this.eventManager?.send({
                 type: 'CLUSTER_STOPPED',
                 data: {
-                    id: command.data.data.clusterID,
+                    id: message.clusterID,
                     reason: 'Cluster already exists'
                 }
             }).catch(() => {
@@ -206,7 +152,7 @@ export class ManagedInstance extends BotInstance {
             return;
         }
 
-        this.startProcess(this.instanceID, command.data.data.clusterID, command.data.data.shardList, command.data.data.totalShards, command.data.data.token, command.data.data.intents as GatewayIntentsString[], command.data.data.url);
+        this.startProcess(message);
     }
 
     private onClusterStop(message: unknown) {

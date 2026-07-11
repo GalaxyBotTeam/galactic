@@ -1,10 +1,10 @@
-import { ManagedInstance } from "../src";
+import { ManagedInstance2 } from "../src";
 
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const instance = new ManagedInstance(
+const instance = new ManagedInstance2(
   `${__dirname}/cluster.ts`,
   "localhost",
   3000,
