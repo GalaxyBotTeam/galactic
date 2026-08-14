@@ -111,7 +111,7 @@ export class EventManager {
 
         if (payload.type === 'request') {
             // Handle requests
-            const data = this._request(payload.data, payload.timeout);
+            const data = this._request(payload.data, payload.timeout || 5000);
             if(data instanceof Promise) {
                 data.then((result) => {
                     this._send({
