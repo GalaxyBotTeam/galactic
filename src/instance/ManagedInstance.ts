@@ -62,8 +62,8 @@ export class ManagedInstance extends BotInstance {
             } else if (m.type == 'INSTANCE_STOP') {
                 if (this.eventMap.INSTANCE_STOP) this.eventMap.INSTANCE_STOP();
             }
-        }, (message) => {
-            return this.onBridgeRequest(message);
+        }, (message, timeout) => {
+            return this.onBridgeRequest(message, timeout);
         });
 
         setInterval(() => {
@@ -224,7 +224,7 @@ export class ManagedInstance extends BotInstance {
         }
     }
 
-    protected onRequest(client: ClusterProcess, message: any): Promise<unknown> {
+    protected onRequest(client: ClusterProcess, message: any, timeout: number): Promise<unknown> {
         if (message.type === 'REDIRECT_REQUEST_TO_GUILD') {
             const guildID = message.guildID;
             const data = message.data;
@@ -234,13 +234,13 @@ export class ManagedInstance extends BotInstance {
                 return client.eventManager.request({
                     type: 'CUSTOM',
                     data: data
-                }, 5000)
+                }, timeout)
             } else {
                 return this.eventManager.request({
                     type: 'REDIRECT_REQUEST_TO_GUILD',
                     guildID: guildID,
                     data: data
-                }, 5000)
+                }, timeout)
             }
         }
 
@@ -248,7 +248,7 @@ export class ManagedInstance extends BotInstance {
             return this.eventManager.request({
                 type: 'BROADCAST_EVAL',
                 data: message.data
-            }, 5000)
+            }, timeout)
         }
 
         if (message.type == 'CUSTOM' && this.eventMap.request) {
@@ -260,7 +260,7 @@ export class ManagedInstance extends BotInstance {
         return Promise.reject(new Error(`Unknown request type: ${message.type}`));
     }
 
-    private onBridgeRequest(message: any): Promise<unknown> {
+    private onBridgeRequest(message: any, timeout: number): Promise<unknown> {
         if (message.type === 'REDIRECT_REQUEST_TO_GUILD') {
             const clusterID = message.clusterID;
             const data = message.data;
@@ -270,7 +270,7 @@ export class ManagedInstance extends BotInstance {
                 return cluster.eventManager.request({
                     type: 'CUSTOM',
                     data: data
-                }, 5000)
+                }, timeout)
             } else {
                 return Promise.reject(new Error(`Cluster is not here. Cluster ID: ${clusterID}`));
             }
@@ -281,7 +281,7 @@ export class ManagedInstance extends BotInstance {
                 return new Promise<unknown>((resolve, reject) => {
                     cluster.eventManager.request({
                         type: 'CLUSTER_HEARTBEAT'
-                    }, 15000).then((r) => {
+                    }, timeout).then((r) => {
                         resolve(r);
                     }).catch((err) => {
                         reject(err);
@@ -295,7 +295,7 @@ export class ManagedInstance extends BotInstance {
                 return c.eventManager.request({
                     type: 'BROADCAST_EVAL',
                     data: message.data,
-                }, 5000);
+                }, timeout);
             }));
         }
 

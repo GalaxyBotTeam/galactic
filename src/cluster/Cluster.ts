@@ -25,7 +25,7 @@ export class Cluster<T extends Client> {
 
     private readonly eventMap: {
         'message': ((message: unknown) => void) | undefined,
-        'request': ((message: unknown, resolve: (data: unknown) => void, reject: (error: any) => void) => void) | undefined,
+        'request': ((message: unknown, resolve: (data: unknown) => void, reject: (error: any) => void, timeout: number) => void) | undefined,
         'CLUSTER_READY': (() => void) | undefined,
     } = {
         message: undefined, request: undefined, CLUSTER_READY: undefined,
@@ -55,8 +55,8 @@ export class Cluster<T extends Client> {
             });
         }, (message: unknown) => {
             this._onMessage(message);
-        }, (message: unknown) => {
-            return this._onRequest(message);
+        }, (message: unknown, timeout) => {
+            return this._onRequest(message, timeout);
         });
         process.on("message", (message) => {
             this.eventManager.receive(message);
@@ -129,11 +129,11 @@ export class Cluster<T extends Client> {
         }
     }
 
-    private _onRequest(message: unknown): unknown {
+    private _onRequest(message: unknown, timeout: number): unknown {
         const m = message as { type: string, data: unknown };
         if(m.type == 'CUSTOM' && this.eventMap.request) {
             return new Promise((resolve, reject) => {
-                this.eventMap.request!(m.data, resolve, reject);
+                this.eventMap.request!(m.data, resolve, reject, timeout);
             });
         } else if(m.type == 'CLUSTER_HEARTBEAT'){
             const startTime = process.hrtime.bigint();

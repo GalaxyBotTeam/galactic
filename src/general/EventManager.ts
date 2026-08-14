@@ -14,9 +14,9 @@ export class EventManager {
 
     private readonly _on: (payload: unknown) => void;
 
-    private readonly _request: (payload: unknown) => unknown;
+    private readonly _request: (payload: unknown, timeout: number) => unknown;
 
-    constructor(send: (payload: EventPayload) => Promise<void>, on: (message: unknown) => void, request: (message: unknown) => unknown) {
+    constructor(send: (payload: EventPayload) => Promise<void>, on: (message: unknown) => void, request: (message: unknown, timeout: number) => unknown) {
         this._send = send;
         this._on = on;
         this._request = request
@@ -26,7 +26,7 @@ export class EventManager {
         return this._send({
             id: crypto.randomUUID(),
             type: 'message',
-            data: data
+            data: data,
         });
     }
 
@@ -53,7 +53,8 @@ export class EventManager {
             this._send({
                 id: id,
                 type: 'request',
-                data: payload
+                data: payload,
+                timeout: timeout
             }).catch((err) => {
                 if (this.pendingPayloads.has(id)) {
                     const to = this.pendingTimeouts.get(id);
@@ -110,7 +111,7 @@ export class EventManager {
 
         if (payload.type === 'request') {
             // Handle requests
-            const data = this._request(payload.data);
+            const data = this._request(payload.data, payload.timeout);
             if(data instanceof Promise) {
                 data.then((result) => {
                     this._send({

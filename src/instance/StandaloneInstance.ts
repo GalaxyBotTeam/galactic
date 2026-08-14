@@ -64,7 +64,7 @@ export class StandaloneInstance extends BotInstance {
         this.startProcess(1, clusterProcess.id, clusterProcess.shardList, this.totalShards, this.token, this.intents);
     }
 
-    protected onRequest(clusterProcess: ClusterProcess, message: any): Promise<unknown> {
+    protected onRequest(clusterProcess: ClusterProcess, message: any, timeout: number): Promise<unknown> {
         if(message.type === 'REDIRECT_REQUEST_TO_GUILD'){
             const guildID = message.guildID;
             const data = message.data;
@@ -74,7 +74,7 @@ export class StandaloneInstance extends BotInstance {
                 return clusterProcess.eventManager.request({
                     type: 'CUSTOM',
                     data: data
-                }, 5000)
+                }, timeout)
             } else {
                 return Promise.reject(new Error(`Shard ID ${shardID} not found in cluster ${clusterProcess.id} for guild ${guildID}`));
             }
@@ -86,7 +86,7 @@ export class StandaloneInstance extends BotInstance {
                     return c.eventManager.request({
                         type: 'BROADCAST_EVAL',
                         data: message.data,
-                    }, 5000);
+                    }, timeout);
                 })
             );
         }
