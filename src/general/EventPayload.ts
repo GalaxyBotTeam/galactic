@@ -1,5 +1,10 @@
 export type EventPayload = {
     id: string,
-    type: 'message' | 'request' | 'response' | 'response_error',
-    data: unknown
+    type: 'message' | 'response' | 'response_error',
+    data: unknown,
+} | {
+    id: string,
+    type: 'request',
+    data: unknown,
+    timeout: number
 }

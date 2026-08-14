@@ -13,7 +13,7 @@ export class ClusterProcess {
     public readonly createdAt: number = Date.now();
 
     private _onMessage?: (message: unknown) => void;
-    private _onRequest?: (message: unknown) => unknown;
+    private _onRequest?: (message: unknown, timeout: number) => unknown;
 
     constructor(id: number, child: ChildProcess, shardList: number[], totalShards: number) {
         this.id = id;
@@ -35,9 +35,9 @@ export class ClusterProcess {
             if (this._onMessage) {
                 this._onMessage(message);
             }
-        }, (message) => {
+        }, (message, timeout) => {
             if (this._onRequest) {
-                return this._onRequest(message);
+                return this._onRequest(message, timeout);
             }
             return undefined;
         })
@@ -59,7 +59,7 @@ export class ClusterProcess {
         this._onMessage = callback;
     }
 
-    onRequest(callback: (message: unknown) => unknown) {
+    onRequest(callback: (message: unknown, timeout: number) => unknown) {
         this._onRequest = callback;
     }
 

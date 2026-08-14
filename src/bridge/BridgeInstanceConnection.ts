@@ -15,7 +15,7 @@ export class BridgeInstanceConnection {
     public readonly establishedAt: number = Date.now();
 
     private _onMessage?: (message: unknown) => void;
-    private _onRequest?: (message: unknown) => unknown;
+    private _onRequest?: (message: unknown, timeout: number) => unknown;
 
     constructor(instanceID: number, connection: Connection, data: unknown, dev: boolean) {
         this.instanceID = instanceID;
@@ -31,9 +31,9 @@ export class BridgeInstanceConnection {
             if (this._onMessage) {
                 this._onMessage(message);
             }
-        }, (message) => {
+        }, (message, timeout) => {
             if (this._onRequest) {
-                return this._onRequest(message);
+                return this._onRequest(message, timeout);
             }
             return undefined;
         })
@@ -43,7 +43,7 @@ export class BridgeInstanceConnection {
         this.eventManager.receive(message);
     }
 
-    onRequest(callback: (message: unknown) => unknown) {
+    onRequest(callback: (message: unknown, timeout: number) => unknown) {
         this._onRequest = callback;
     }
 

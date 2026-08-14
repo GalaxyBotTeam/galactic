@@ -79,8 +79,8 @@ export abstract class BotInstance {
                     this.onMessage(clusterProcess, message);
                 })
 
-                clusterProcess.onRequest((message) => {
-                    return this.onRequest(clusterProcess, message);
+                clusterProcess.onRequest((message, timeout) => {
+                    return this.onRequest(clusterProcess, message, timeout);
                 });
             });
 
@@ -155,7 +155,7 @@ export abstract class BotInstance {
         }
     }
 
-    protected abstract onRequest(clusterProcess: ClusterProcess, message: any): Promise<unknown>;
+    protected abstract onRequest(clusterProcess: ClusterProcess, message: any, timeout: number): Promise<unknown>;
 
     public on<K extends keyof BotInstanceEventListeners>(event: K, listener: BotInstanceEventListeners[K]): void {
         this.eventMap[event] = listener;

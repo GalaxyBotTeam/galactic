@@ -233,7 +233,7 @@ export class Bridge {
                 return;
             })
 
-            bridgeInstanceConnection.onRequest((m: any) => {
+            bridgeInstanceConnection.onRequest((m: any, timeout: number) => {
                 if (m.type == 'REDIRECT_REQUEST_TO_GUILD') {
                     const guildID = m.guildID;
                     const shardID = ShardingUtil.getShardIDForGuild(guildID, this.getTotalShards());
@@ -254,7 +254,7 @@ export class Bridge {
                         clusterID: cluster.clusterID,
                         guildID: guildID,
                         data: m.data
-                    }, 5000)
+                    }, timeout)
                 }
 
                 if (m.type == 'BROADCAST_EVAL') {
@@ -263,7 +263,7 @@ export class Bridge {
                             return c.eventManager.request<unknown[]>({
                                 type: 'BROADCAST_EVAL',
                                 data: m.data,
-                            }, 5000);
+                            }, timeout);
                         })
                     )
                     return new Promise<unknown[]>((resolve, reject) => {
