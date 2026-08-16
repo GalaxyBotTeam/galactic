@@ -21,6 +21,7 @@ export class Bridge {
     private readonly eventMap: BridgeEventListeners = {
         CLUSTER_READY: undefined,
         CLUSTER_HEARTBEAT_FAILED: undefined,
+        CLUSTER_HEARTBEAT_RESET: undefined,
         CLUSTER_STOPPED: undefined,
         CLUSTER_SPAWNED: undefined,
         CLUSTER_RECLUSTER: undefined,
@@ -104,6 +105,7 @@ export class Bridge {
                 }, 20000).then((r) => {
                     cluster.removeMissedHeartbeat();
                     cluster.heartbeatResponse = r;
+                    if (this.eventMap.CLUSTER_HEARTBEAT_RESET) this.eventMap.CLUSTER_HEARTBEAT_RESET(cluster)
                 }).catch((err) => {
                     if (this.eventMap.CLUSTER_HEARTBEAT_FAILED) this.eventMap.CLUSTER_HEARTBEAT_FAILED(cluster, err)
                     cluster.addMissedHeartbeat()
@@ -455,6 +457,7 @@ export class Bridge {
 }
 
 export type BridgeEventListeners = {
+    'CLUSTER_HEARTBEAT_RESET': ((cluster: BridgeClusterConnection) => void) | undefined,
     'CLUSTER_READY': ((cluster: BridgeClusterConnection, guilds: number, members: number, readyDuration: number) => void) | undefined,
     'CLUSTER_STOPPED': ((cluster: BridgeClusterConnection) => void) | undefined,
     'CLUSTER_SPAWNED': ((cluster: BridgeClusterConnection, connection: BridgeInstanceConnection) => void) | undefined,
