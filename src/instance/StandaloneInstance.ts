@@ -10,8 +10,8 @@ export class StandaloneInstance extends BotInstance {
     public readonly token: string;
     public readonly intents: GatewayIntentsString[];
 
-    constructor(entryPoint: string, shardsPerCluster: number, totalClusters: number, token: string, intents: GatewayIntentsString[], execArgv?: string[]) {
-        super(entryPoint, execArgv);
+    constructor(entryPoint: string, shardsPerCluster: number, totalClusters: number, token: string, intents: GatewayIntentsString[], execArgv?: string[], env?: NodeJS.ProcessEnv) {
+        super(entryPoint, execArgv, env);
         this.shardsPerCluster = shardsPerCluster;
         this.totalClusters = totalClusters;
         this.token = token;

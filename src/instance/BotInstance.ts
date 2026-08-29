@@ -9,13 +9,16 @@ export abstract class BotInstance {
 
     private readonly execArgv: string[];
 
+    private readonly env: NodeJS.ProcessEnv;
+
     public readonly clusters: Map<number, ClusterProcess> = new Map();
 
     protected _shuttingDown = false;
 
-    protected constructor(entryPoint: string, execArgv?: string[]) {
+    protected constructor(entryPoint: string, execArgv?: string[], env?: NodeJS.ProcessEnv) {
         this.entryPoint = entryPoint;
         this.execArgv = execArgv ?? [];
+        this.env = env ?? {};
     }
 
     protected readonly eventMap: BotInstanceEventListeners = {
@@ -44,6 +47,7 @@ export abstract class BotInstance {
         try {
             const childProcess = fork(this.entryPoint, {
                 env: {
+                    ...this.env,
                     INSTANCE_ID: instanceID.toString(),
                     CLUSTER_ID: clusterID.toString(),
                     SHARD_LIST: shardList.join(','),
