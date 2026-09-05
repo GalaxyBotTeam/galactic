@@ -1,0 +1,67 @@
+import { GatewayIntentsString } from "discord.js";
+import { ClusterCalculator } from "../domain/ClusterCalculator";
+import { BridgeClusterConnection } from "./BridgeClusterConnection";
+import { BridgeInstanceConnection } from "./BridgeInstanceConnection";
+import { TypedEmitter } from "../general/TypedEmitter";
+import type { BridgeEvents } from "./Bridge";
+
+/** Steal-selection + cluster assign/recluster business logic - was Bridge.createCluster/checkRecluster/moveCluster. */
+export class ClusterReclusterer {
+    constructor(
+        private readonly calculator: ClusterCalculator,
+        private readonly token: string,
+        private readonly intents: GatewayIntentsString[],
+        private readonly totalShards: () => number,
+        private readonly events: TypedEmitter<BridgeEvents>,
+    ) {}
+
+    createCluster(connection: BridgeInstanceConnection, cluster: BridgeClusterConnection, recluster = false): void {
+        cluster.resetMissedHeartbeats();
+        cluster.heartbeatResponse = undefined;
+
+        if (!recluster) {
+            cluster.setConnection(connection);
+        } else {
+            cluster.oldConnection?.eventManager.send({
+                type: 'CLUSTER_RECLUSTER',
+                data: { clusterID: cluster.clusterID },
+            });
+        }
+
+        this.events.emit('CLUSTER_SPAWNED', cluster, connection);
+        connection.eventManager.send({
+            type: 'CLUSTER_CREATE',
+            data: {
+                clusterID: cluster.clusterID,
+                instanceID: connection.instanceID,
+                totalShards: this.totalShards(),
+                shardList: cluster.shardList,
+                token: this.token,
+                intents: this.intents,
+            },
+        });
+    }
+
+    /** Steals one cluster from the busiest connected instance onto the least busy one, if imbalanced. */
+    checkRecluster(connectedInstances: BridgeInstanceConnection[]): void {
+        if (!this.calculator.checkAllClustersConnected()) return;
+
+        const { most, least } = this.calculator.findMostAndLeastClustersForConnections(connectedInstances);
+        if (!most || !least) return;
+
+        const clusterToSteal = this.calculator.getClusterForConnection(most)[0];
+        if (!clusterToSteal) return;
+
+        this.steal(clusterToSteal, least);
+    }
+
+    steal(cluster: BridgeClusterConnection, to: BridgeInstanceConnection): void {
+        cluster.reclustering(to);
+        this.events.emit('CLUSTER_RECLUSTER', cluster, to, cluster.oldConnection!);
+        this.createCluster(to, cluster, true);
+    }
+
+    moveCluster(bridgeInstanceConnection: BridgeInstanceConnection, bridgeClusterConnection: BridgeClusterConnection): void {
+        this.steal(bridgeClusterConnection, bridgeInstanceConnection);
+    }
+}
