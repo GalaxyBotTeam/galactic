@@ -1,7 +1,10 @@
-import {BotInstance} from "./BotInstance";
-import {ClusterProcess} from "../cluster/ClusterProcess";
-import {GatewayIntentsString} from "discord.js";
-import {ShardingUtil} from "../general/ShardingUtil";
+import { BotInstance } from "./BotInstance";
+import { ClusterProcess } from "../cluster/ClusterProcess";
+import { GatewayIntentsString } from "discord.js";
+
+const STANDALONE_INSTANCE_ID = 1;
+const RESTART_BACKOFF_BASE_MS = 1000;
+const RESTART_MAX_ATTEMPTS = 5;
 
 export class StandaloneInstance extends BotInstance {
     private readonly totalClusters: number;
@@ -9,6 +12,9 @@ export class StandaloneInstance extends BotInstance {
 
     public readonly token: string;
     public readonly intents: GatewayIntentsString[];
+
+    /** Consecutive crash-restart attempts per cluster id - reset once a cluster reports ready. */
+    private readonly restartAttempts: Map<number, number> = new Map();
 
     constructor(entryPoint: string, shardsPerCluster: number, totalClusters: number, token: string, intents: GatewayIntentsString[], execArgv?: string[]) {
         super(entryPoint, execArgv);
@@ -36,15 +42,24 @@ export class StandaloneInstance extends BotInstance {
     public start(): void {
         const clusters = this.calculateClusters();
         for (const [id, shardList] of Object.entries(clusters)) {
-            this.startProcess(1, Number(id), shardList, this.totalShards, this.token, this.intents);
+            this.startProcess(STANDALONE_INSTANCE_ID, Number(id), shardList, this.totalShards, this.token, this.intents);
         }
     }
 
     protected setClusterStopped(clusterProcess: ClusterProcess, reason: string): void {
         this.clusters.delete(clusterProcess.id);
-        if (!this._shuttingDown) {
-            this.restartProcess(clusterProcess);
+        if (this._shuttingDown) return;
+
+        const attempts = (this.restartAttempts.get(clusterProcess.id) ?? 0) + 1;
+        this.restartAttempts.set(clusterProcess.id, attempts);
+
+        if (attempts > RESTART_MAX_ATTEMPTS) {
+            this.events.emit('ERROR', `Cluster ${clusterProcess.id} crash-looped ${attempts} times (${reason}) - giving up, not restarting.`);
+            return;
         }
+
+        const delay = RESTART_BACKOFF_BASE_MS * Math.pow(2, attempts - 1);
+        setTimeout(() => this.restartProcess(clusterProcess), delay);
     }
 
     public async shutdown(): Promise<void> {
@@ -53,51 +68,28 @@ export class StandaloneInstance extends BotInstance {
     }
 
     protected setClusterReady(clusterProcess: ClusterProcess): void {
-        
+        this.restartAttempts.delete(clusterProcess.id);
     }
 
-    protected setClusterSpawned(clusterProcess: ClusterProcess): void {
-
+    protected setClusterSpawned(): void {
+        // no-op: StandaloneInstance has no external coordinator to notify.
     }
 
     private restartProcess(clusterProcess: ClusterProcess): void {
-        this.startProcess(1, clusterProcess.id, clusterProcess.shardList, this.totalShards, this.token, this.intents);
+        this.startProcess(STANDALONE_INSTANCE_ID, clusterProcess.id, clusterProcess.shardList, this.totalShards, this.token, this.intents);
     }
 
-    protected onRequest(clusterProcess: ClusterProcess, message: any, timeout: number): Promise<unknown> {
-        if(message.type === 'REDIRECT_REQUEST_TO_GUILD'){
-            const guildID = message.guildID;
-            const data = message.data;
-
-            const shardID = ShardingUtil.getShardIDForGuild(guildID, clusterProcess.totalShards);
-            if(clusterProcess.shardList.includes(shardID)) {
-                return clusterProcess.eventManager.request({
-                    type: 'CUSTOM',
-                    data: data
-                }, timeout)
-            } else {
-                return Promise.reject(new Error(`Shard ID ${shardID} not found in cluster ${clusterProcess.id} for guild ${guildID}`));
-            }
-        }
-
-        if(message.type == 'BROADCAST_EVAL') {
-            return Promise.all(
-                this.clusters.values().map(c => {
-                    return c.eventManager.request({
-                        type: 'BROADCAST_EVAL',
-                        data: message.data,
-                    }, timeout);
-                })
-            );
-        }
-
-        if(message.type == 'CUSTOM' && this.eventMap.request) {
-            return new Promise((resolve, reject) => {
-                this.eventMap.request!(clusterProcess, message.data, resolve, reject);
-            });
-        }
-
-        return Promise.reject(new Error(`Unknown request type: ${message.type}`));
+    protected async forwardGuildRequestElsewhere(guildID: string): Promise<unknown> {
+        return Promise.reject(new Error(`No cluster owns guild ${guildID} and there is no bridge to escalate to.`));
     }
 
+    protected forwardGuildMessageElsewhere(): void {
+        // no bridge to forward to; matches pre-refactor behavior (this path silently dropped the message).
+    }
+
+    protected async broadcastEvalAcrossClusters(data: string, timeout: number): Promise<unknown[]> {
+        return Promise.all(
+            this.clusters.values().map(c => c.eventManager.request({ type: 'BROADCAST_EVAL', data }, timeout))
+        );
+    }
 }

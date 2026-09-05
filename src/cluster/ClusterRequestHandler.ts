@@ -1,0 +1,102 @@
+import { Client } from 'discord.js';
+import os from 'node:os';
+import { ProcessRequest } from '../protocol/process';
+import { assertNever, HeartbeatResponse, ShardPing } from '../protocol/shared';
+
+export type CustomRequestHandler = (data: unknown, resolve: (data: unknown) => void, reject: (error: unknown) => void, timeout: number) => void;
+
+export type ClusterRequestHandlerDeps<T extends Client> = {
+    getClient(): T;
+    getCustomHandler(): CustomRequestHandler | undefined;
+    selfDestruct(reason: string): Promise<void>;
+};
+
+/**
+ * WARNING: evaluates a stringified function received from the parent process via IPC.
+ * Only safe because the parent and this child are the same trust boundary (both spawned
+ * by the same BotInstance) - kept per explicit decision, not removed.
+ */
+function runBroadcastEval<T extends Client>(client: T, source: string): unknown {
+    const fn = eval(`(${source})`);
+    return fn(client);
+}
+
+/** Samples CPU/memory/shard-ping data over a real 500ms window (fixes the previous fire-and-forget bug). */
+export function sampleHeartbeat<T extends Client>(client: T): Promise<HeartbeatResponse> {
+    return new Promise((resolve) => {
+        const startTime = process.hrtime.bigint();
+        const startUsage = process.cpuUsage();
+
+        setTimeout(() => {
+            const endTime = process.hrtime.bigint();
+            const usageDiff = process.cpuUsage(startUsage);
+
+            const elapsedTimeUs = Number((endTime - startTime) / 1000n);
+            const totalCPUTime = usageDiff.user + usageDiff.system;
+            const cpuCount = os.cpus().length;
+            const cpuPercent = (totalCPUTime / (elapsedTimeUs * cpuCount)) * 100;
+
+            const shardPings: ShardPing[] = [];
+            try {
+                const shards = client.ws.shards;
+                if (shards) {
+                    shards.forEach((shard) => {
+                        const entry: ShardPing = {
+                            id: shard.id,
+                            ping: shard.ping,
+                            status: shard.status,
+                            guilds: client.guilds.cache.filter(g => g.shardId === shard.id).size,
+                            members: client.guilds.cache.filter(g => g.shardId === shard.id).reduce((acc, g) => acc + g.memberCount, 0),
+                        };
+                        shardPings.push(entry);
+                        client.shard?.fetchClientValues('uptime', shard.id).then(values => {
+                            entry.uptime = values;
+                        }).catch(() => {});
+                    });
+                }
+            } catch (_) {
+                // ignore and keep empty shardPings on failure
+            }
+
+            resolve({
+                cpu: { raw: process.cpuUsage(), cpuPercent: cpuPercent.toFixed(2) },
+                memory: {
+                    raw: process.memoryUsage(),
+                    memoryPercent: ((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100).toFixed(2) + '%',
+                    usage: (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + 'MB',
+                },
+                ping: client.ws.ping,
+                shardPings,
+            });
+        }, 500);
+    });
+}
+
+/**
+ * Child-side (Cluster.ts) dispatch table for requests sent DOWN from the parent.
+ * REDIRECT_REQUEST_TO_GUILD is a request the child only ever SENDS (via
+ * sendRequestToClusterOfGuild), never receives - it's rejected here for completeness.
+ */
+export function createClusterRequestHandler<T extends Client>(deps: ClusterRequestHandlerDeps<T>) {
+    return function handleRequest(message: ProcessRequest, _timeout: number): unknown {
+        switch (message.type) {
+            case 'CUSTOM': {
+                const handler = deps.getCustomHandler();
+                if (!handler) return undefined;
+                return new Promise((resolve, reject) => handler(message.data, resolve, reject, _timeout));
+            }
+            case 'CLUSTER_HEARTBEAT':
+                return sampleHeartbeat(deps.getClient());
+            case 'BROADCAST_EVAL':
+                return runBroadcastEval(deps.getClient(), message.data);
+            case 'SELF_DESTRUCT':
+                return deps.selfDestruct(message.reason).then(() => {
+                    process.exit(0);
+                });
+            case 'REDIRECT_REQUEST_TO_GUILD':
+                return Promise.reject(new Error('Cluster does not handle incoming REDIRECT_REQUEST_TO_GUILD requests'));
+            default:
+                return assertNever(message, 'ClusterRequestHandler');
+        }
+    };
+}
